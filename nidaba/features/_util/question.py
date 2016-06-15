@@ -3,6 +3,8 @@ import re
 from unicodedata import category
 from collections import Counter, namedtuple, OrderedDict
 from nidaba.exceptions import FeatureException
+from bs4 import BeautifulSoup
+
 
 def get_weekday(t):
     """
@@ -101,6 +103,7 @@ def string_length_fraction(str_list_1, str_list_2):
     return str1_size/(str1_size + str2_size)
 
 
+# IntrepidWozEre - Should we refactor this to use grab_all_urls() and then process that list?
 def stackoverflow_urls(s):
     """
     Return any urls that belong to Stack Overflow.
@@ -146,6 +149,7 @@ def stackoverflow_urls(s):
     return result
 
 
+# IntrepidWozEre - Should we refactor this to use grab_all_urls() and then process that list?
 def python_docs_urls(s):
     """
     Find urls that match the Python docs inside a string.
@@ -160,3 +164,16 @@ def python_docs_urls(s):
     result = regex.findall(s)
 
     return result
+
+
+def grab_all_urls(s):
+    """
+    Find all the urls in the question and stick them in a list for later processing.
+
+    :param s: Input string
+    :return: List of urls
+    """
+    soup = BeautifulSoup(s)
+    return [link.get('href') for link in soup.find_all('a')]
+
+

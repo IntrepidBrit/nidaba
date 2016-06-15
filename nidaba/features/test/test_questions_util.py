@@ -1,4 +1,8 @@
-import sys, pytest, datetime, pytz
+import os
+import pytest
+import datetime
+import pytz
+import json
 from nidaba.features._util import question
 from nidaba.exceptions import FeatureException
 
@@ -248,3 +252,40 @@ def test_python_docs_urls():
 
     for url in urls:
         assert url in result
+
+
+def test_grab_all_urls():
+    """
+    The function responsible for grabbing all the links from a block of text, and putting them into a list of links
+    :return: None
+    """
+    assert question.grab_all_urls("") == []
+
+    assert question.grab_all_urls("""Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque sodales faucibus
+    elementum. Mauris rutrum interdum turpis, id convallis nibh porttitor et. Pellentesque ultrices tortor ut leo
+    fermentum sollicitudin. Donec urna ipsum, blandit sit amet posuere quis, suscipit a orci. Mauris vel ex et tortor
+    lacinia tincidunt at id turpis. Pellentesque dapibus, risus eu aliquet ornare, nisl lorem porttitor eros, vel auctor
+    nisl ante vestibulum ipsum. Ut iaculis arcu quis interdum facilisis. Pellentesque non mollis ante, vitae semper sapien.
+    Proin malesuada nisl at nulla sodales ultrices. Sed eget fermentum velit. Cras sed turpis pharetra, consectetur
+    mauris non, sollicitudin elit. Etiam non magna lacus. Mauris gravida urna sit amet rutrum malesuada. Nulla ultricies
+    eros vel nunc ornare maximus. Duis vitae arcu sit amet quam varius accumsan et ac dui. Morbi varius volutpat nulla,
+    non venenatis libero dictum vel. Donec quis massa libero. Proin vitae efficitur est, nec posuere ligula. Nullam quis
+    ligula.""") == []
+
+    assert question.grab_all_urls("""<html><head><title>Hello World!</title></head><body><h1>Hello World!</h1><p>I like
+                                turtles</p></body></html>""") == []
+
+    assert question.grab_all_urls("<a href=\"http://stackoverflow.com/a/1732454/1241495\">issit zalgo?</a>") != \
+           ["http://stackoverflow.com/a/2504454/673991"]
+
+    assert question.grab_all_urls("<a href=\"http://stackoverflow.com/a/1732454/1241495\">oh, noes zalgo!</a>") == \
+           ["http://stackoverflow.com/a/1732454/1241495"]
+
+    f = open(os.path.join(os.path.dirname(__file__), 'data', 'test_question.json'), 'r')
+    try:
+        assert question.grab_all_urls(json.load(f)['Body']) == \
+               ['http://c-faq.com/stdio/scanfprobs.html',
+                'http://c-faq.com/stdio/getsvsfgets.html',
+                'http://stackoverflow.com/questions/9378500/why-is-splitting-a-string-slower-in-c-than-python']
+    finally:
+        f.close()
