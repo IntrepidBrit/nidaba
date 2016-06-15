@@ -12,9 +12,12 @@ def test_get_weekday():
     assert question.get_weekday(1416654427) == 5
     assert question.get_weekday(1417000158) != 5
 
-    # Ensure processes negative dates properly
-    assert question.get_weekday(-100000000) == 0
-    assert question.get_weekday(-99913600) != 0
+    # Ensure processes negative dates properly -> - utc seconds value should be rejected.
+    with pytest.raises(FeatureException):
+        question.get_weekday(-100000000)
+
+    with pytest.raises(FeatureException):
+        question.get_weekday(-99913600)
 
     # Ensure that days tick over properly (and that UTC timezone is being used)
     assert question.get_weekday(345599) == 6
