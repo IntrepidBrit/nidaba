@@ -20,13 +20,6 @@ def test_get_weekday():
     assert question.get_weekday(345599) == 6
     assert question.get_weekday(345600) == 0
 
-    # Make sure the various out of range exceptions are thrown
-    with pytest.raises(FeatureException):
-        question.get_weekday(sys.maxsize+1)  # Overflow Error
-
-    with pytest.raises(FeatureException):
-        question.get_weekday(-sys.maxsize-1)  # OSError
-
     with pytest.raises(FeatureException):
         # If replace is not used, then the timezone is naively converted into the test machine's timezone
         question.get_weekday(datetime.datetime.max.replace(tzinfo=pytz.utc).timestamp() + 1)  # Value Error (> 31st December 9999 23:59:59)
@@ -52,13 +45,6 @@ def test_is_weekend():
     # Weekend end
     assert question.is_weekend(345599)  # sun
     assert not question.is_weekend(345600)  # mon
-
-    # Make sure the various out of range exceptions are thrown
-    with pytest.raises(FeatureException):
-        question.is_weekend(sys.maxsize+1)  # Overflow Error
-
-    with pytest.raises(FeatureException):
-        question.is_weekend(-sys.maxsize-1)  # OSError
 
     with pytest.raises(FeatureException):
         # If replace is not used, then the timezone is naively converted into the test machine's timezone
