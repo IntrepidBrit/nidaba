@@ -1,10 +1,14 @@
+import datetime
+import json
+
 import os
 import pytest
-import datetime
 import pytz
-import json
-from nidaba.features._util import question
+import random
 from nidaba.exceptions import FeatureException
+from nidaba.features._util import question
+from nidaba.utils.HTTPStatus import HTTPStatus
+
 
 def test_get_weekday():
     """
@@ -254,14 +258,14 @@ def test_python_docs_urls():
         assert url in result
 
 
-def test_grab_all_urls():
+def test_get_all_urls():
     """
     The function responsible for grabbing all the links from a block of text, and putting them into a list of links
     :return: None
     """
-    assert question.grab_all_urls("") == []
+    assert question.get_all_links("") == []
 
-    assert question.grab_all_urls("""Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque sodales faucibus
+    assert question.get_all_links("""Lorem ipsum dolor sit amet, consectetur adipiscing elit. Quisque sodales faucibus
     elementum. Mauris rutrum interdum turpis, id convallis nibh porttitor et. Pellentesque ultrices tortor ut leo
     fermentum sollicitudin. Donec urna ipsum, blandit sit amet posuere quis, suscipit a orci. Mauris vel ex et tortor
     lacinia tincidunt at id turpis. Pellentesque dapibus, risus eu aliquet ornare, nisl lorem porttitor eros, vel auctor
@@ -272,20 +276,38 @@ def test_grab_all_urls():
     non venenatis libero dictum vel. Donec quis massa libero. Proin vitae efficitur est, nec posuere ligula. Nullam quis
     ligula.""") == []
 
-    assert question.grab_all_urls("""<html><head><title>Hello World!</title></head><body><h1>Hello World!</h1><p>I like
+    assert question.get_all_links("""<html><head><title>Hello World!</title></head><body><h1>Hello World!</h1><p>I like
                                 turtles</p></body></html>""") == []
 
-    assert question.grab_all_urls("<a href=\"http://stackoverflow.com/a/1732454/1241495\">issit zalgo?</a>") != \
+    assert question.get_all_links("<a href=\"http://stackoverflow.com/a/1732454/1241495\">issit zalgo?</a>") != \
            ["http://stackoverflow.com/a/2504454/673991"]
 
-    assert question.grab_all_urls("<a href=\"http://stackoverflow.com/a/1732454/1241495\">oh, noes zalgo!</a>") == \
+    assert question.get_all_links("<a href=\"http://stackoverflow.com/a/1732454/1241495\">oh, noes zalgo!</a>") == \
            ["http://stackoverflow.com/a/1732454/1241495"]
 
     f = open(os.path.join(os.path.dirname(__file__), 'data', 'test_question.json'), 'r')
     try:
-        assert question.grab_all_urls(json.load(f)['Body']) == \
+        assert question.get_all_links(json.load(f)['Body']) == \
                ['http://c-faq.com/stdio/scanfprobs.html',
                 'http://c-faq.com/stdio/getsvsfgets.html',
                 'http://stackoverflow.com/questions/9378500/why-is-splitting-a-string-slower-in-c-than-python']
     finally:
         f.close()
+
+
+def test_get_link_status_code():
+    """
+    The function responsible for trying to grab the status code of the link
+    :return: None
+    """
+
+    assert question.get_link_status_code("") == HTTPStatus.BAD_REQUEST
+    assert question.get_link_status_code("sopython.com") == HTTPStatus.BAD_REQUEST
+    assert question.get_link_status_code("http://sopython.com") == HTTPStatus.OK
+    assert question.get_link_status_code("http://ww.thiswebsiteshouldneverexistyo.roflbob") == HTTPStatus.NOT_FOUND
+
+    # Can take a long time.
+    for i in range(0,3):
+        test_status = random.choice(list(HTTPStatus))
+        assert question.get_link_status_code("http://httpstat.us/{code}".format(code=test_status.value)) == test_status
+

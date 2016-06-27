@@ -1,9 +1,14 @@
 import datetime
-import re
+import http.client
+import socket
 from unicodedata import category
+from urllib.parse import urlparse
+
+import re
+from bs4 import BeautifulSoup
 from collections import Counter, namedtuple, OrderedDict
 from nidaba.exceptions import FeatureException
-from bs4 import BeautifulSoup
+from nidaba.utils.HTTPStatus import HTTPStatus
 
 
 def get_weekday(t):
@@ -149,7 +154,7 @@ def stackoverflow_urls(s):
     return result
 
 
-# IntrepidWozEre - Should we refactor this to use grab_all_urls() and then process that list?
+# Intrepid woz 'ere - Should we refactor this to use grab_all_urls() and then process that list?
 def python_docs_urls(s):
     """
     Find urls that match the Python docs inside a string.
@@ -166,14 +171,49 @@ def python_docs_urls(s):
     return result
 
 
-def grab_all_urls(s):
+def get_all_links(s):
     """
-    Find all the urls in the question and stick them in a list for later processing.
+    Find all the urls in the text and stick them in a list for later processing.
 
     :param s: Input string
-    :return: List of urls
+    :return: List of links
     """
     soup = BeautifulSoup(s)
     return [link.get('href') for link in soup.find_all('a')]
 
 
+def get_link_status_code(link):
+    """
+
+    :param link: a string containing an url
+    :return:
+    """
+    try:
+        parsed_link = urlparse(link)
+        conn = http.client.HTTPConnection(parsed_link.netloc)
+        conn.request("HEAD", parsed_link.path)
+        return HTTPStatus(conn.getresponse().status)
+    except http.client.BadStatusLine:
+        return HTTPStatus.BAD_REQUEST
+    except socket.gaierror as e:
+        if e.errno == 11001:
+            # Technically speaking, a HTTP status code doesn't make sense because DNS lookup has failed ...
+            return HTTPStatus.NOT_FOUND
+        else:
+            raise
+
+
+def get_all_link_status_codes(list_of_links):
+    """
+    Takes a list of links, tries to establish a connection and gets the status code. Lumps both together in a dict and
+    then appends that dict to a list.
+
+    :param list_of_links: list of link url strings
+    :return: list of link dicts with keys: link, code
+    """
+
+    links = []
+    for link in list_of_links:
+        links.append({'link': link, 'code': get_link_status_code(link)})
+
+    return links
